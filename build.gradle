@@ -39,7 +39,7 @@ else if (project.hasProperty("GHIDRA_INSTALL_DIR")) {
 	ghidraInstallDir = project.getProperty("GHIDRA_INSTALL_DIR")
 }
 else {
-	ghidraInstallDir = "/usr/local/Caskroom/ghidra/11.2-20240926/ghidra_11.2_PUBLIC"
+	ghidraInstallDir = "/usr/local/Caskroom/ghidra/11.2.1-20241105/ghidra_11.2.1_PUBLIC/"
 }
 
 task distributeExtension {
@@ -62,6 +62,16 @@ dependencies {
 	// this extension is built.	
 	implementation 'org.abcl:abcl:1.9.2'
 	implementation 'org.abcl:abcl-contrib:1.9.2'
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDirs += [
+                    "src/main/common_lisp"
+            ]
+        }
+    }
 }
 
 // Exclude additional files from the built extension

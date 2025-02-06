@@ -17,10 +17,12 @@ package ghidracl;
 
 import java.awt.BorderLayout;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,13 +32,21 @@ import java.util.concurrent.Executors;
 import javax.swing.*;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.armedbear.lisp.Interpreter;
+import org.armedbear.lisp.JavaObject;
+import org.armedbear.lisp.Packages;
+import org.armedbear.lisp.Symbol;
+import org.armedbear.lisp.Package;
+import org.armedbear.lisp.Function;
 
 import docking.ActionContext;
 import docking.ComponentProvider;
 import docking.action.DockingAction;
 import docking.action.MenuData;
 import docking.action.ToolBarData;
+import ghidra.GhidraRun;
 import ghidra.app.ExamplesPluginPackage;
 import ghidra.app.events.ProgramActivatedPluginEvent;
 import ghidra.app.plugin.PluginCategoryNames;
@@ -66,6 +76,8 @@ import resources.Icons;
 )
 //@formatter:on
 public class GhidraCLPlugin extends ProgramPlugin {
+	
+	private Logger log = LogManager.getLogger(GhidraCLPlugin.class);
 
 	/**
 	 * GhidraCLPlugin constructor.
@@ -102,8 +114,9 @@ public class GhidraCLPlugin extends ProgramPlugin {
 			}
 		};
 		action.setEnabled(true);
-		action.setMenuBarData(new MenuData(new String[] { "Common Lisp", "Start Slynk" }, "Slynk"));
+		action.setMenuBarData(new MenuData(new String[] { "Common Lisp", "Start Slynkx" }, "Slynk"));
 		tool.addAction(action);
+		log.info("setup complete");
 	}
 
 	/**
@@ -112,7 +125,7 @@ public class GhidraCLPlugin extends ProgramPlugin {
 	protected void startSlynk() {
 		TaskLauncher.launchModal("Starting Slynk", monitor -> {
 			try {
-				monitor.setMaximum(4);
+				monitor.setMaximum(5);
 				monitor.setMessage("Loading abcl contrib");
 				Interpreter.evaluate("(require :abcl-contrib)");
 				monitor.increment();
@@ -122,6 +135,13 @@ public class GhidraCLPlugin extends ProgramPlugin {
 				monitor.setMessage("Loading slynk");
 				Interpreter.evaluate("(ql:quickload :slynk)");
 				monitor.increment();
+				
+				// run the init file
+				initCL();
+				log.info("here!!!!");
+
+				monitor.increment();
+				
 				monitor.setMessage("Starting slynk server");
 				Interpreter.evaluate("(slynk:create-server :port 4008)");
 				monitor.increment();
@@ -130,5 +150,15 @@ public class GhidraCLPlugin extends ProgramPlugin {
 				Msg.showError(GhidraCLPlugin.class, null, "Starting Slynk", "failed to start slynk", e);
 			}
 		});
+	}
+	
+	protected void initCL() throws IOException {
+		InputStream initFileStream  = getClass().getResourceAsStream("/init.lisp");
+		String initFile = new String(initFileStream.readAllBytes(), StandardCharsets.UTF_8);
+		Interpreter.evaluate(initFile);
+		Package gcl = Packages.findPackage("ghidra-cl");
+		Symbol setCurrentProgram = gcl.findAccessibleSymbol("set-current-program");
+		Function setCurrentProgramFunc = (Function)setCurrentProgram.getSymbolFunction();
+		setCurrentProgramFunc.execute(new JavaObject(this.getCurrentProgram()));
 	}
 }
