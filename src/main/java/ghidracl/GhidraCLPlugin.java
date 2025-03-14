@@ -15,53 +15,33 @@
  */
 package ghidracl;
 
-import java.awt.BorderLayout;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-import javax.swing.*;
-
-import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.armedbear.lisp.Function;
 import org.armedbear.lisp.Interpreter;
 import org.armedbear.lisp.JavaObject;
-import org.armedbear.lisp.Packages;
-import org.armedbear.lisp.Symbol;
+import org.armedbear.lisp.LispObject;
 import org.armedbear.lisp.Package;
-import org.armedbear.lisp.Function;
+import org.armedbear.lisp.Packages;
+import org.armedbear.lisp.Stream;
+import org.armedbear.lisp.Symbol;
 
 import docking.ActionContext;
-import docking.ComponentProvider;
 import docking.action.DockingAction;
 import docking.action.MenuData;
-import docking.action.ToolBarData;
-import ghidra.GhidraRun;
-import ghidra.app.ExamplesPluginPackage;
-import ghidra.app.events.ProgramActivatedPluginEvent;
 import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.app.plugin.ProgramPlugin;
-import ghidra.app.services.ProgramManager;
-import ghidra.framework.plugintool.*;
+import ghidra.framework.plugintool.PluginInfo;
+import ghidra.framework.plugintool.PluginTool;
 import ghidra.framework.plugintool.util.PluginStatus;
-import ghidra.program.model.listing.Program;
-import ghidra.util.HelpLocation;
 import ghidra.util.Msg;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.Task;
 import ghidra.util.task.TaskLauncher;
 import ghidra.util.task.TaskMonitor;
-import resources.Icons;
 
 /**
  * Provide class-level documentation that describes what this plugin does.
@@ -129,22 +109,23 @@ public class GhidraCLPlugin extends ProgramPlugin {
 				monitor.setMessage("Loading abcl contrib");
 				Interpreter.evaluate("(require :abcl-contrib)");
 				monitor.increment();
+
 				monitor.setMessage("Loading abcl quicklisp");
 				Interpreter.evaluate("(require :quicklisp-abcl)");
 				monitor.increment();
+
+				monitor.setMessage("Initializing ghidra-cl");
+				initCL();
+				monitor.increment();
+
 				monitor.setMessage("Loading slynk");
 				Interpreter.evaluate("(ql:quickload :slynk)");
-				monitor.increment();
-				
-				// run the init file
-				initCL();
-				log.info("here!!!!");
-
 				monitor.increment();
 				
 				monitor.setMessage("Starting slynk server");
 				Interpreter.evaluate("(slynk:create-server :port 4008)");
 				monitor.increment();
+
 				Msg.showInfo(GhidraCLPlugin.class, null, "Start Slynk", "Slynk started at localhost:4008");
 			} catch (Exception e) {
 				Msg.showError(GhidraCLPlugin.class, null, "Starting Slynk", "failed to start slynk", e);
@@ -153,11 +134,16 @@ public class GhidraCLPlugin extends ProgramPlugin {
 	}
 	
 	protected void initCL() throws IOException {
-		InputStream initFileStream  = getClass().getResourceAsStream("/init.lisp");
-		String initFile = new String(initFileStream.readAllBytes(), StandardCharsets.UTF_8);
-		Interpreter.evaluate(initFile);
-		Package gcl = Packages.findPackage("ghidra-cl");
-		Symbol setCurrentProgram = gcl.findAccessibleSymbol("set-current-program");
+		// run the init file
+		// Hail https://stackoverflow.com/a/62745593
+		LispObject LOAD_function = Symbol.LOAD.getSymbolFunction ();
+		InputStream initFileInputStream  = getClass().getResourceAsStream("/init.lisp");
+		Stream initFileStream = new Stream (Symbol.SYSTEM_STREAM, initFileInputStream, Symbol.CHARACTER);
+		LOAD_function.execute(initFileStream);
+
+		// expose current program
+		Package gcl = Packages.findPackage("GHIDRA-CL");
+		Symbol setCurrentProgram = gcl.findAccessibleSymbol("SET-CURRENT-PROGRAM");
 		Function setCurrentProgramFunc = (Function)setCurrentProgram.getSymbolFunction();
 		setCurrentProgramFunc.execute(new JavaObject(this.getCurrentProgram()));
 	}
