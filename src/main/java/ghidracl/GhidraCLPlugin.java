@@ -143,8 +143,9 @@ public class GhidraCLPlugin extends ProgramPlugin {
 
 		// expose current program
 		Package gcl = Packages.findPackage("GHIDRA-CL");
-		Symbol setCurrentProgram = gcl.findAccessibleSymbol("SET-CURRENT-PROGRAM");
-		Function setCurrentProgramFunc = (Function)setCurrentProgram.getSymbolFunction();
-		setCurrentProgramFunc.execute(new JavaObject(this.getCurrentProgram()));
+
+		Function setGLInstance = (Function)gcl.findAccessibleSymbol("SET-GHIDRA-CL-INSTANCE").
+					getSymbolFunction();
+		setGLInstance.execute(new JavaObject(this));
 	}
 }

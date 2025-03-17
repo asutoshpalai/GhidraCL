@@ -1,11 +1,18 @@
 (defpackage :ghidra-cl
   (:nicknames :gcl)
   (:use :cl)
-  (:export #:set-current-program))
+  (:export #:get-current-program
+           #:get-current-location))
 
 (in-package :ghidra-cl)
 
-(defparameter *current-program* nil)
+(defparameter *ghidra-cl-instance* nil)
 
-(defun set-current-program (new-cp)
-  (setf *current-program* new-cp))
+(defun set-ghidra-cl-instance (inst)
+  (setf *ghidra-cl-instance* inst))
+
+(defun get-current-program ()
+  (java:jcall "getCurrentProgram" gcl::*ghidra-cl-instance*))
+
+(defun get-current-location ()
+  (java:jcall "getProgramLocation" gcl::*ghidra-cl-instance*))

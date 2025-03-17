@@ -44,8 +44,10 @@ yet.
 
 - Run the following to test that it's working
 ```lisp
-    CL-USER> (jstatic "showInfo" "ghidra.util.Msg"
-                (jclass "ghidracl.GhidraCLPlugin")
-                (jcoerce nil "java.awt.Component")
-                 "GhidraCL" "hello from CL")
+    CL-USER> (let* ((adr (#"toString" (#"getAddress" (gcl::get-current-location))))
+                    (msg (format nil "current address is 0x~a" adr)))
+                (jstatic "showInfo" "ghidra.util.Msg"
+                  (jclass "ghidracl.GhidraCLPlugin")
+                  (jcoerce nil "java.awt.Component")
+                  "GhidraCL" msg))
 ```
