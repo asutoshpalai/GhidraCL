@@ -39,7 +39,7 @@ else if (project.hasProperty("GHIDRA_INSTALL_DIR")) {
 	ghidraInstallDir = project.getProperty("GHIDRA_INSTALL_DIR")
 }
 else {
-	ghidraInstallDir = "/opt/homebrew/Caskroom/ghidra/11.3-20250205/ghidra_11.3_PUBLIC"
+	ghidraInstallDir = "/opt/homebrew/Caskroom/ghidra/11.3.2-20250415/ghidra_11.3.2_PUBLIC"
 }
 
 task distributeExtension {

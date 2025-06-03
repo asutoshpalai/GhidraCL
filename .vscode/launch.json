@@ -8,7 +8,7 @@
       "mainClass": "ghidra.Ghidra",
       "args": "ghidra.GhidraRun",
       "classPaths": [
-        "/opt/homebrew/Caskroom/ghidra/11.3-20250205/ghidra_11.3_PUBLIC/Ghidra/Framework/Utility/lib/Utility.jar"
+        "/opt/homebrew/Caskroom/ghidra/11.3.2-20250415/ghidra_11.3.2_PUBLIC/Ghidra/Framework/Utility/lib/Utility.jar"
       ],
       "vmArgs": [
         "-Dghidra.external.modules=${workspaceFolder}",
@@ -36,7 +36,7 @@
       "module": "pyghidra.ghidra_launch",
       "args": [
         "--install-dir",
-        "/opt/homebrew/Caskroom/ghidra/11.3-20250205/ghidra_11.3_PUBLIC",
+        "/opt/homebrew/Caskroom/ghidra/11.3.2-20250415/ghidra_11.3.2_PUBLIC",
         "-g",
         "ghidra.GhidraRun"
       ],

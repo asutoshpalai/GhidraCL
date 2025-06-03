@@ -17,7 +17,6 @@ package ghidracl;
 
 import java.io.IOException;
 import java.io.InputStream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.armedbear.lisp.Function;
@@ -56,12 +55,12 @@ import ghidra.util.task.TaskMonitor;
 )
 //@formatter:on
 public class GhidraCLPlugin extends ProgramPlugin {
-	
+
 	private Logger log = LogManager.getLogger(GhidraCLPlugin.class);
 
 	/**
 	 * GhidraCLPlugin constructor.
-	 * 
+	 *
 	 * @param tool The plugin tool that this plugin is added to.
 	 */
 	public GhidraCLPlugin(PluginTool tool) {
@@ -94,9 +93,53 @@ public class GhidraCLPlugin extends ProgramPlugin {
 			}
 		};
 		action.setEnabled(true);
-		action.setMenuBarData(new MenuData(new String[] { "Common Lisp", "Start Slynkx" }, "Slynk"));
+		action.setMenuBarData(new MenuData(new String[] { "Common Lisp", "Start Slynk" }));
 		tool.addAction(action);
+
 		log.info("setup complete");
+	}
+
+	/*
+	 * Add this to the end of setupActions during dev to automate the manual steps of
+	 * connecting emacs to slync. You need to open emacs and run the manual steps at least
+	 * once for this to work.
+	 */
+	private void macosDev() {
+		// add menu action for Common Lisp->Reload init
+		// for dev
+		DockingAction action = new DockingAction("Reload Init", getName()) {
+			@Override
+			public void actionPerformed(ActionContext context) {
+				initCL();
+			}
+		};
+		action.setEnabled(true);
+		action.setMenuBarData(new MenuData(new String[] { "Common Lisp", "Reload Init" }));
+		tool.addAction(action);
+
+		startSlynk();
+
+		String script = "tell application \"Emacs\" to activate\n" +
+						 "tell application \"System Events\"\n" +
+						 "  keystroke \"x\" using {option down}\n" +
+						 "  keystroke \"sly-connect\"\n" +
+						 "  keystroke return\n" +
+						 "  keystroke return\n" +
+						 "  keystroke return\n" +
+						 "end tell";
+
+		try {
+			Process process = new ProcessBuilder("osascript", "-e", script).start();
+			// Handle process input/output if needed
+			int exitCode = process.waitFor();
+			if (exitCode == 0) {
+				log.info("AppleScript executed successfully.");
+			} else {
+				log.error("AppleScript execution failed with code: " + exitCode);
+			}
+		} catch (IOException | InterruptedException e) {
+			Msg.showError(GhidraCLPlugin.class, null, "Activating emcas", "failed to activate emacs", e);
+		}
 	}
 
 	/**
@@ -121,7 +164,7 @@ public class GhidraCLPlugin extends ProgramPlugin {
 				monitor.setMessage("Loading slynk");
 				Interpreter.evaluate("(ql:quickload :slynk)");
 				monitor.increment();
-				
+
 				monitor.setMessage("Starting slynk server");
 				Interpreter.evaluate("(slynk:create-server :port 4008)");
 				monitor.increment();
@@ -132,12 +175,17 @@ public class GhidraCLPlugin extends ProgramPlugin {
 			}
 		});
 	}
-	
-	protected void initCL() throws IOException {
+
+	protected void initCL() {
+		InputStream initFileInputStream  = getClass().getResourceAsStream("/init.lisp");
+		if (initFileInputStream == null) {
+			log.warn("there is no init CL file");
+			return;
+		}
+
 		// run the init file
 		// Hail https://stackoverflow.com/a/62745593
 		LispObject LOAD_function = Symbol.LOAD.getSymbolFunction ();
-		InputStream initFileInputStream  = getClass().getResourceAsStream("/init.lisp");
 		Stream initFileStream = new Stream (Symbol.SYSTEM_STREAM, initFileInputStream, Symbol.CHARACTER);
 		LOAD_function.execute(initFileStream);
 
