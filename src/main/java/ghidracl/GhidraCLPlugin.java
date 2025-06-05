@@ -103,6 +103,8 @@ public class GhidraCLPlugin extends ProgramPlugin {
 	 * Add this to the end of setupActions during dev to automate the manual steps of
 	 * connecting emacs to slync. You need to open emacs and run the manual steps at least
 	 * once for this to work.
+	 *
+	 * TODO: add an environment flag or something....
 	 */
 	private void macosDev() {
 		// add menu action for Common Lisp->Reload init

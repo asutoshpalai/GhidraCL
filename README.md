@@ -44,10 +44,39 @@ yet.
 
 - Run the following to test that it's working
 ```lisp
-    CL-USER> (let* ((adr (#"toString" (#"getAddress" (gcl::get-current-location))))
-                    (msg (format nil "current address is 0x~a" adr)))
-                (jstatic "showInfo" "ghidra.util.Msg"
-                  (jclass "ghidracl.GhidraCLPlugin")
-                  (jcoerce nil "java.awt.Component")
-                  "GhidraCL" msg))
+CL-USER> (let* ((adr (#"toString" (#"getAddress" (gcl::get-current-location))))
+                (msg (format nil "current address is 0x~a" adr)))
+            (jstatic "showInfo" "ghidra.util.Msg"
+              (jclass "ghidracl.GhidraCLPlugin")
+              (jcoerce nil "java.awt.Component")
+              "GhidraCL" msg))
+```
+
+### Common Lisp examples
+
+- Print the name of all the functions and their addresses
+```lisp
+CL-USER> (let* ((cp (gcl:get-current-program))
+                (fm (#"getFunctionManager" cp))
+                (functions-it (#"getFunctions" fm t)))
+          (loop while (java:jcall "hasNext" functions-it)
+                do (let ((function (java:jcall "next" functions-it)))
+                      (format t "Function: ~a Addr: 0x~a ~%"
+                        (#"getName" function)
+                        (#"toString" (#"getEntryPoint" function))))))
+```
+
+- Get decompiled code for a given function
+```
+CL-USER> (let ((ifc (jss:new 'DecompInterface)))
+            (jcall "openProgram" ifc (gcl:get-current-program))
+            (let ((main-functions (jcall "getGlobalFunctions"
+                                (jcall "getListing" (gcl:get-current-program))
+                                "main")))
+              (let ((res (jcall "decompileFunction"
+                                ifc
+                                (jcall "getFirst" main-functions)
+                                0
+                                (jss:new 'ConsoleTaskMonitor))))
+                (format t "~a~%" (#"toString" (jcall "getCCodeMarkup" res))))))
 ```
